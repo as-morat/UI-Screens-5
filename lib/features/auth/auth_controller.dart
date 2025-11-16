@@ -1,5 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
 
 final authControllerProvider = Provider<AuthController>((ref) {
@@ -14,13 +14,12 @@ class AuthController {
 
   Future<void> signUp(String email, String password) async {
     try {
-      await _auth.createUserWithEmailAndPassword(
+      final userCred = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      await _auth.currentUser?.sendEmailVerification();
-    } catch (e) {
-      rethrow;
+    } on FirebaseAuthException catch (e) {
+      throw _mapError(e.code);
     }
   }
 
@@ -30,16 +29,41 @@ class AuthController {
         email: email,
         password: password,
       );
-    } catch (e) {
-      rethrow;
+    } on FirebaseAuthException catch (e) {
+      throw _mapError(e.code);
     }
   }
 
   Future<void> logout() async {
     try {
       await _auth.signOut();
-    } catch (e) {
-      rethrow;
+    } catch (_) {
+      throw "Logout failed.";
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw _mapError(e.code);
+    }
+  }
+
+  String _mapError(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return "Email already used.";
+      case 'invalid-email':
+        return "Invalid email.";
+      case 'weak-password':
+        return "Weak password.";
+      case 'user-not-found':
+        return "User not found.";
+      case 'wrong-password':
+        return "Wrong password.";
+      default:
+        return "Something went wrong.";
     }
   }
 }

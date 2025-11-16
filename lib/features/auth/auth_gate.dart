@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:learn_firebase/features/auth/auth_providers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:learn_firebase/features/auth/screens/login_screen.dart';
-import 'package:learn_firebase/features/auth/screens/verify_email_screen.dart';
-import 'package:learn_firebase/screens/home_screen.dart';
-import 'package:learn_firebase/widgets/custom_snackbar.dart';
+
+import '../../screens/home_screen.dart';
+
+final authStateProvider = StreamProvider<User?>(
+      (ref) => FirebaseAuth.instance.authStateChanges(),
+);
 
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
@@ -15,18 +18,18 @@ class AuthGate extends ConsumerWidget {
 
     return authState.when(
       data: (user) {
-        if (user == null) return const LoginScreen();
-        if (!user.emailVerified) return const VerifyEmailScreen();
-        return const HomeScreen();
+        if (user == null) {
+          return const LoginScreen();
+        } else {
+          return const HomeScreen();
+        }
       },
-      error: (err, _) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          showCustomSnackBar(context, err.toString());
-        });
-        return const Scaffold(body: Center(child: Text("Error loading user")));
-      },
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, _) => Scaffold(
+        body: Center(child: Text("Error: $err")),
+      ),
     );
   }
 }

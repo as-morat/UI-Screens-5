@@ -36,15 +36,17 @@ lib/
 ├── features/
 │   └── auth/
 │       ├── auth_controller.dart
-│       ├── repository.dart
+│       ├── auth_gate.dart
+│       ├── auth_providers.dart
 │       └── screens/
 │           ├── login_screen.dart
 │           ├── signup_screen.dart
-│           ├── forgot_password.dart
-│           └── verify_email.dart
+│           └── forgot_password_screen.dart
 ├── widgets/
 │   ├── custom_snackbar.dart
 │   └── alert_box.dart
+├── screens/
+│   └── home_screen.dart
 └── main.dart
 ```
 ## 🖼 UI Screens

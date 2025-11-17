@@ -14,6 +14,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  AuthController get _auth => ref.read(authControllerProvider);
   String email = "", password = "", confirmPassword = "";
   bool _isLoading = false, _obscurePassword = true, _obscureConfirm = true;
 
@@ -26,15 +27,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
 
     setState(() => _isLoading = true);
-    final auth = ref.read(authControllerProvider);
+    try {
+      await _auth.signUp(email, password);
+      if (mounted) showCustomSnackBar(context, 'Account created successfully!');
+    } on FirebaseAuthException catch (e) {
+      if (mounted) showCustomSnackBar(context, e.code);
+    } catch (_) {
+      if (mounted) showCustomSnackBar(context, 'Unexpected error occurred.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _googleSubmit() async {
+    setState(() => _isLoading = true);
 
     try {
-      await auth.signUp(email, password);
-      showCustomSnackBar(context, 'Account created successfully!');
-    } on FirebaseAuthException catch (e) {
-      showCustomSnackBar(context, e.code);
-    } catch (_) {
-      showCustomSnackBar(context, 'Unexpected error occurred.');
+      await _auth.googleSignIn();
+      if (mounted) showCustomSnackBar(context, 'Logged in successfully');
+    } catch (e) {
+      if (mounted) {
+        showCustomSnackBar(context, e.toString());
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -80,11 +94,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty)
+                            if (value == null || value.trim().isEmpty) {
                               'Please enter email';
+                            }
                             final regex = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+");
-                            if (!regex.hasMatch(value!.trim()))
+                            if (!regex.hasMatch(value!.trim())) {
                               'Please enter a valid email';
+                            }
                             return null;
                           },
                           onSaved: (value) => email = value?.trim() ?? "",
@@ -106,8 +122,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           ),
                           obscureText: _obscurePassword,
                           validator: (value) {
-                            if (value == null || value.trim().length < 6)
+                            if (value == null || value.trim().length < 6) {
                               return "Password must be at least 6 characters";
+                            }
                             return null;
                           },
                           onSaved: (value) => password = value?.trim() ?? "",
@@ -129,8 +146,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           ),
                           obscureText: _obscureConfirm,
                           validator: (value) {
-                            if (value == null || value.trim().length < 6)
+                            if (value == null || value.trim().length < 6) {
                               return "Password must be at least 6 characters";
+                            }
                             return null;
                           },
                           onSaved: (value) =>
@@ -191,13 +209,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           height: 50,
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: _googleSubmit,
                             icon: Image.asset(
                               "assets/images/google.png",
                               height: 24,
                               width: 24,
                             ),
-                            label: const Text("Sign In with Google"),
+                            label: const Text("Sign Up with Google"),
                             style: ElevatedButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

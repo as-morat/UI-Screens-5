@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:learn_firebase/features/auth/screens/login_screen.dart';
 
 import '../../screens/home_screen.dart';
-
-final authStateProvider = StreamProvider<User?>(
-      (ref) => FirebaseAuth.instance.authStateChanges(),
-);
+import 'auth_providers.dart';
 
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});

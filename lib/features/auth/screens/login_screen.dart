@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:learn_firebase/features/auth/auth_controller.dart';
+import 'package:learn_firebase/features/auth/screens/forgot_password_screen.dart';
 import 'package:learn_firebase/features/auth/screens/signup_screen.dart';
 import '../../../widgets/custom_snackbar.dart';
 
@@ -15,6 +16,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  AuthController get _auth => ref.read(authControllerProvider);
   String email = "", password = "";
   bool _isLoading = false, _obscurePassword = true;
 
@@ -22,22 +24,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     _formKey.currentState?.save();
     setState(() => _isLoading = true);
-
-    final auth = ref.read(authControllerProvider);
     try {
-      await auth.login(email, password);
-      showCustomSnackBar(context, 'Log in successful');
+      await _auth.login(email, password);
+      if (mounted) {
+        showCustomSnackBar(context, 'Log in successful');
+      }
     } on FirebaseAuthException catch (e) {
       final messages = {
         'wrong-password': 'Wrong password!',
         'user-not-found': 'No user found with this email',
       };
-      showCustomSnackBar(
-        context,
-        messages[e.code] ?? e.message ?? 'Authentication failed!',
-      );
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          messages[e.code] ?? e.message ?? 'Authentication failed!',
+        );
+      }
     } catch (_) {
-      showCustomSnackBar(context, 'Unexpected error');
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          "Please correct your email address or password",
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _googleSubmit() async {
+    setState(() => _isLoading = true);
+    try {
+      await _auth.googleSignIn();
+      if (mounted) showCustomSnackBar(context, 'Logged in successfully');
+    } catch (e) {
+      if (mounted) {
+        showCustomSnackBar(context, e.toString());
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -122,7 +145,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Align(
                           alignment: Alignment.bottomRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
                             child: const Text("Forgot password?"),
                           ),
                         ),
@@ -163,8 +193,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           children: [
                             const Expanded(child: Divider(thickness: 1)),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text("or", style: TextStyle(color: theme.colorScheme.primary)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: Text(
+                                "or",
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
                             ),
                             const Expanded(child: Divider(thickness: 1)),
                           ],
@@ -174,10 +211,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           height: 50,
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: Image.asset("assets/images/google.png", height: 24, width: 24),
+                            onPressed: _googleSubmit,
+                            icon: Image.asset(
+                              "assets/images/google.png",
+                              height: 24,
+                              width: 24,
+                            ),
                             label: const Text("Sign In with Google"),
-                            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
